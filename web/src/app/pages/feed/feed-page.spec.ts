@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { SessionService } from '../../core/session.service';
 import { FakeEventSource, httpError, makeNotification } from '../../testing/fakes';
 import { actAs, type Fakes, query, setupFakes, textOf } from '../../testing/setup';
-import { NotificationsPage } from './notifications-page';
+import { FeedPage } from './feed-page';
 
-describe('NotificationsPage', () => {
+describe('FeedPage', () => {
   let fakes: Fakes;
 
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe('NotificationsPage', () => {
 
   const render = async () => {
     await actAs('u-alice');
-    const fixture = TestBed.createComponent(NotificationsPage);
+    const fixture = TestBed.createComponent(FeedPage);
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     const titles = () => textOf(el, 'ol > li p.font-medium span.break-words');
@@ -64,7 +64,8 @@ describe('NotificationsPage', () => {
     it('turns the empty state into a list when the first notification arrives', async () => {
       fakes.notifications.notifications = [];
       const { el, titles, stable } = await render();
-      expect(el.textContent).toContain('No notifications yet');
+      expect(el.textContent).toContain('Your feed is empty');
+      expect(query(el, 'app-empty-state a').getAttribute('href')).toBe('/alerts');
 
       FakeEventSource.latest().emit('notification', makeNotification({ id: 'n-9' }));
       await stable();

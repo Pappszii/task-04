@@ -43,7 +43,7 @@ Users create alerts and are notified via email and Slack when matching world eve
 
 **Testing (Vitest)**
 - Vitest is the test runner for both `/server` and `/web`. In Angular use the Vitest builder/runner (`ng test`, Angular 21+ default) with jsdom, and Angular `TestBed` for component tests.
-- Required UI tests: alert form validation (AC1), `adminGuard` (AC12), channel picker renders from API data and reflects a disabled channel (AC10, AC13), notifications page appends SSE messages (AC11, with a fake `EventSource`).
+- Required UI tests: alert form validation (AC1), `adminGuard` (AC12), channel picker renders from API data and reflects a disabled channel (AC10, AC13), Feed page appends SSE messages (AC11, with a fake `EventSource`).
 - Test through the abstract API classes using fakes, never the real HTTP backend.
 - Verify the exact Angular / Tailwind / Vitest version combination at scaffold time and record the versions in the README.
 
@@ -80,7 +80,7 @@ REST surface:
 - `GET /api/admin/channels`, `PATCH /api/admin/channels/:id { enabled }`
 - `POST /api/dev/events` (dev only, for demo triggering)
 
-Web (`/web/src/app`): lazy routes `/alerts`, `/notifications`, `/settings`, `/admin/channels` (behind `adminGuard`); header user/role switcher; channel picker rendered from `GET /api/channels`; `RealtimeService` wraps SSE and exposes signals.
+Web (`/web/src/app`): lazy routes `/feed` (home: `/` and unknown URLs redirect there), `/alerts`, `/settings`, `/admin/channels` (behind `adminGuard`, which redirects others to the feed); header user/role switcher; channel picker rendered from `GET /api/channels`; `RealtimeService` wraps SSE and exposes signals.
 
 ## Rules
 - `RuleMatcher` is a pure function (event + rule -> boolean). Keep it side-effect free and unit-tested.
@@ -89,7 +89,7 @@ Web (`/web/src/app`): lazy routes `/alerts`, `/notifications`, `/settings`, `/ad
 - Notification statuses: `sent | failed | skipped`.
 
 ## Scope
-**In:** alert CRUD, mock event feeds, matching, mock Email/Slack delivery, My notifications (live), Settings (contact destinations), Admin channel management (enable/disable).
+**In:** alert CRUD, mock event feeds, matching, mock Email/Slack delivery, Feed (live notifications, the home page), Settings (contact destinations), Admin channel management (enable/disable).
 
 **Out:** real integrations, login/auth, persistence beyond process memory, admin delivery log / cross-user rule overview / event-simulator UI, failure simulation.
 
@@ -101,7 +101,7 @@ Web (`/web/src/app`): lazy routes `/alerts`, `/notifications`, `/settings`, `/ad
 5. Mock event sources + timer + `POST /api/dev/events`.
 6. REST routes, admin guard, SSE endpoint.
 7. Angular shell, session switcher, API abstraction + HTTP implementations.
-8. Alerts page (list + form), Settings page, My notifications page (SSE).
+8. Alerts page (list + form), Settings page, Feed page (SSE; the home page).
 9. Admin channels page + guard.
 10. Prove extensibility: add a throwaway third mock channel (e.g. `webhook`) and confirm it appears in the UI and delivers with zero changes outside its own file + one `register()` line.
 11. README: run instructions, architecture diagram, "how to add a channel".
@@ -125,7 +125,7 @@ Web (`/web/src/app`): lazy routes `/alerts`, `/notifications`, `/settings`, `/ad
 - **AC10.** Adding a new channel requires only a new class implementing `NotificationChannel` and one `register()` call. It appears in the channel picker, Settings, and admin list automatically.
 
 **Realtime**
-- **AC11.** A newly created notification appears on the user's My notifications page within ~2s without a manual refresh (SSE). Only the user's own notifications are pushed to them.
+- **AC11.** A newly created notification appears on the user's Feed page within ~2s without a manual refresh (SSE). Only the user's own notifications are pushed to them.
 
 **Admin**
 - **AC12.** Switching to the Admin role shows an Admin nav item. Non-admin users cannot reach `/admin/*` in the UI (redirect) or `/api/admin/*` (403).
@@ -138,13 +138,13 @@ Web (`/web/src/app`): lazy routes `/alerts`, `/notifications`, `/settings`, `/ad
 - **AC16.** Seed data lets a reviewer see a full flow within one minute of starting (an existing alert, an event auto-emitting, a notification arriving).
 
 ## Verification
-- `npm test` (Vitest: server unit tests, plus Angular component tests for alert form validation, the admin guard, the channel picker and the notifications page).
+- `npm test` (Vitest: server unit tests, plus Angular component tests for alert form validation, the admin guard, the channel picker and the Feed page).
 - `npm run dev`, then in the browser: switch to a seeded user, create an alert, fire `POST /api/dev/events` with a matching event, and watch the notification appear live (AC1, AC4, AC11). Switch to Admin, disable a channel, fire again, and confirm the notification shows `skipped` (AC13).
 - Disconnect the network and repeat the flow (AC7).
 - Walk the AC list top to bottom before declaring done.
 
 ## Open questions / assumptions (confirm with product)
-1. Users see their own delivery history on a "My notifications" page. It was not explicitly requested.
+1. Users see their own delivery history on a "Feed" page, which is also the home page. It was not explicitly requested.
 2. Contact destinations (email address, Slack handle) are edited by the user on a Settings page. In production these might come from SSO or Slack OAuth.
 3. Admin scope is channel enable/disable only. Delivery log, cross-user rule view and event-simulator UI were deliberately excluded. Should any be added?
 4. Should an admin-disabled channel drop deliveries (`skipped`, current choice) or queue them until re-enabled?

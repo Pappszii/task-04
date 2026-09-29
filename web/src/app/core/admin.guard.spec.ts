@@ -36,13 +36,13 @@ describe('adminGuard (AC12)', () => {
     expect(await runGuard()).toBe(true);
   });
 
-  it('redirects a non-admin to /alerts', async () => {
+  it('redirects a non-admin to the feed', async () => {
     await asUser('u-alice');
 
     const result = await runGuard();
 
     expect(result).toBeInstanceOf(UrlTree);
-    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe('/alerts');
+    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe('/feed');
   });
 
   it('waits for the demo users before deciding', async () => {
@@ -70,13 +70,13 @@ describe('adminGuard (AC12)', () => {
   });
 
   describe('through the router', () => {
-    it('a non-admin opening /admin/channels lands on /alerts', async () => {
+    it('a non-admin opening /admin/channels lands on the feed', async () => {
       await asUser('u-bob');
       const harness = await RouterTestingHarness.create();
 
       await harness.navigateByUrl('/admin/channels');
 
-      expect(TestBed.inject(Router).url).toBe('/alerts');
+      expect(TestBed.inject(Router).url).toBe('/feed');
     });
 
     it('the admin opening /admin/channels sees the page', async () => {

@@ -11,7 +11,7 @@ World Alerts proof of concept. Design and acceptance criteria are in [CLAUDE.md]
 | Mock news / market / disaster sources on a timer, `POST /api/dev/events` | done, unit tested |
 | Full REST API, demo identity, admin guard, SSE stream | done, integration tested |
 | `/web` shell: header nav, demo-user switcher, live status, lazy routes, `adminGuard`, API layer, SSE `RealtimeService` | done, unit tested |
-| `/web` Alerts (list, create/edit dialog, active switch, delete confirm), My notifications (live via SSE), Settings (contact per channel) | done, component tested |
+| `/web` Feed (home page, live via SSE), Alerts (list, create/edit dialog, active switch, delete confirm), Settings (contact per channel) | done, component tested |
 | `/web` Admin channels page | placeholder (plan step 9) |
 
 ## Commands

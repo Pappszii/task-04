@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { HOME_URL } from './core/navigation';
 import { RealtimeService, type RealtimeStatus } from './core/realtime.service';
 import { SessionService } from './core/session.service';
 import { ToastOutlet } from './ui/toast-outlet';
@@ -29,13 +30,14 @@ export class App {
   private readonly router = inject(Router);
 
   protected readonly links = computed<NavLink[]>(() => [
+    { path: HOME_URL, label: 'Feed' },
     { path: '/alerts', label: 'Alerts' },
-    { path: '/notifications', label: 'Notifications' },
     { path: '/settings', label: 'Settings' },
     ...(this.session.isAdmin() ? [{ path: '/admin/channels', label: 'Admin' }] : []),
   ]);
 
   protected readonly liveStatus = computed(() => LIVE_STATUS[this.realtime.status()]);
+  protected readonly homeUrl = HOME_URL;
 
   constructor() {
     void this.session.load();
@@ -45,7 +47,7 @@ export class App {
     this.session.select((event.target as HTMLSelectElement).value);
     // canMatch only runs on navigation, so leave admin pages ourselves when switching to a non-admin.
     if (!this.session.isAdmin() && this.router.url.startsWith('/admin')) {
-      void this.router.navigateByUrl('/alerts');
+      void this.router.navigateByUrl(HOME_URL);
     }
   }
 }

@@ -1,23 +1,20 @@
-<h1 class="text-2xl font-semibold">My notifications</h1>
-<p class="mt-1 text-sm text-muted">Every delivery for your alerts. New ones appear here as they happen.</p>
+<h1 class="text-2xl font-semibold">Feed</h1>
+<p class="mt-1 text-sm text-muted">Every notification from your alerts, newest first. New ones appear as they happen.</p>
 
 <p class="sr-only" role="status" aria-live="polite">{{ latestAnnouncement() }}</p>
 
 <div class="mt-6">
   @if (history.error()) {
-    <app-error-state
-      title="Could not load your notifications."
-      [messages]="errorMessages()"
-      (retry)="history.reload()"
-    />
+    <app-error-state title="Could not load your feed." [messages]="errorMessages()" (retry)="history.reload()" />
   } @else if (!history.hasValue()) {
-    <app-loading-state label="Loading notifications…" />
+    <app-loading-state label="Loading your feed…" />
   } @else if (items().length === 0) {
-    <app-empty-state title="No notifications yet">
-      <p>When an event matches one of your <a routerLink="/alerts" class="text-accent underline">alerts</a>, it shows up here straight away.</p>
+    <app-empty-state title="Your feed is empty">
+      <p>When a world event matches one of your alerts, it shows up here straight away.</p>
+      <a routerLink="/alerts" class="btn btn-primary mt-4">Create an alert</a>
     </app-empty-state>
   } @else {
-    <ol class="flex flex-col divide-y divide-line rounded-lg border border-line bg-surface" aria-label="Notifications">
+    <ol class="flex flex-col divide-y divide-line rounded-lg border border-line bg-surface" aria-label="Feed">
       @for (item of items(); track item.notification.id) {
         @let n = item.notification;
         <li class="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between" [class.bg-accent-soft]="item.isNew">

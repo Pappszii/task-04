@@ -22,13 +22,14 @@ const STATUS: Record<NotificationStatus, { label: string; tone: StatusTone }> = 
   skipped: { label: 'Skipped', tone: 'warning' },
 };
 
+/** The home page: every delivery for the demo user's alerts, live over SSE. */
 @Component({
-  selector: 'app-notifications-page',
+  selector: 'app-feed-page',
   imports: [DatePipe, RouterLink, EmptyState, ErrorState, LoadingState, StatusTag],
-  templateUrl: './notifications-page.html',
+  templateUrl: './feed-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NotificationsPage {
+export class FeedPage {
   private readonly api = inject(NotificationsApi);
   private readonly session = inject(SessionService);
   private readonly realtime = inject(RealtimeService);

@@ -1,18 +1,18 @@
 import type { Routes } from '@angular/router';
 import { adminGuard } from './core/admin.guard';
+import { HOME_URL } from './core/navigation';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'alerts' },
+  { path: '', pathMatch: 'full', redirectTo: HOME_URL },
+  {
+    path: 'feed',
+    title: 'Feed · World Alerts',
+    loadComponent: () => import('./pages/feed/feed-page').then((m) => m.FeedPage),
+  },
   {
     path: 'alerts',
     title: 'Alerts · World Alerts',
     loadComponent: () => import('./pages/alerts/alerts-page').then((m) => m.AlertsPage),
-  },
-  {
-    path: 'notifications',
-    title: 'My notifications · World Alerts',
-    loadComponent: () =>
-      import('./pages/notifications/notifications-page').then((m) => m.NotificationsPage),
   },
   {
     path: 'settings',
@@ -32,5 +32,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'alerts' },
+  { path: '**', redirectTo: HOME_URL },
 ];

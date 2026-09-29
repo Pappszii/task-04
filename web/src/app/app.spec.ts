@@ -15,7 +15,7 @@ describe('App shell', () => {
     fakes = setupFakes(routes);
   });
 
-  const render = async (url = '/alerts') => {
+  const render = async (url = '/') => {
     const fixture = TestBed.createComponent(App);
     await TestBed.inject(Router).navigateByUrl(url);
     await fixture.whenStable();
@@ -42,16 +42,29 @@ describe('App shell', () => {
     expect(options).toEqual(['Alice', 'Bob', 'Admin (admin)']);
     expect(switcher(el).value).toBe('u-alice');
     expect(switcher(el).labels?.[0]?.textContent?.trim()).toBe('Acting as');
-    expect(el.querySelector('h1')?.textContent).toContain('Alerts');
+  });
+
+  it.each(['/', '/no-such-page', '/notifications'])('opens the feed as the home page from %s', async (url) => {
+    const { el } = await render(url);
+
+    expect(TestBed.inject(Router).url).toBe('/feed');
+    expect(el.querySelector('h1')?.textContent?.trim()).toBe('Feed');
+    expect(el.querySelector('nav[aria-label="Main"] a[aria-current="page"]')?.textContent?.trim()).toBe('Feed');
+  });
+
+  it('links the brand to the feed', async () => {
+    const { el } = await render('/settings');
+
+    expect(el.querySelector('header a')?.getAttribute('href')).toBe('/feed');
   });
 
   it('hides the Admin link from a regular user and shows it to the admin (AC12)', async () => {
     const { fixture, el } = await render();
-    expect(navLabels(el)).toEqual(['Alerts', 'Notifications', 'Settings']);
+    expect(navLabels(el)).toEqual(['Feed', 'Alerts', 'Settings']);
 
     await switchTo(fixture, 'u-admin');
 
-    expect(navLabels(el)).toEqual(['Alerts', 'Notifications', 'Settings', 'Admin']);
+    expect(navLabels(el)).toEqual(['Feed', 'Alerts', 'Settings', 'Admin']);
     expect(localStorage.getItem(DEMO_USER_STORAGE_KEY)).toBe('u-admin');
   });
 
@@ -62,7 +75,7 @@ describe('App shell', () => {
 
     await switchTo(fixture, 'u-bob');
 
-    expect(TestBed.inject(Router).url).toBe('/alerts');
+    expect(TestBed.inject(Router).url).toBe('/feed');
   });
 
   it('marks the current page link', async () => {
