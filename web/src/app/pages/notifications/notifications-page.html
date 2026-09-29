@@ -1,0 +1,51 @@
+<h1 class="text-2xl font-semibold">My notifications</h1>
+<p class="mt-1 text-sm text-muted">Every delivery for your alerts. New ones appear here as they happen.</p>
+
+<p class="sr-only" role="status" aria-live="polite">{{ latestAnnouncement() }}</p>
+
+<div class="mt-6">
+  @if (history.error()) {
+    <app-error-state
+      title="Could not load your notifications."
+      [messages]="errorMessages()"
+      (retry)="history.reload()"
+    />
+  } @else if (!history.hasValue()) {
+    <app-loading-state label="Loading notifications…" />
+  } @else if (items().length === 0) {
+    <app-empty-state title="No notifications yet">
+      <p>When an event matches one of your <a routerLink="/alerts" class="text-accent underline">alerts</a>, it shows up here straight away.</p>
+    </app-empty-state>
+  } @else {
+    <ol class="flex flex-col divide-y divide-line rounded-lg border border-line bg-surface" aria-label="Notifications">
+      @for (item of items(); track item.notification.id) {
+        @let n = item.notification;
+        <li class="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between" [class.bg-accent-soft]="item.isNew">
+          <div class="min-w-0">
+            <p class="flex flex-wrap items-center gap-2 font-medium">
+              @if (item.isNew) {
+                <app-status-tag tone="accent">New</app-status-tag>
+              }
+              <span class="break-words">{{ n.event.title }}</span>
+            </p>
+            <p class="mt-1 text-sm text-muted">
+              {{ categoryLabels[n.event.category] }} · severity {{ n.event.severity }} of 5 · alert
+              "{{ n.ruleName }}" · via {{ n.channelName }}
+            </p>
+            @if (n.reason) {
+              <p class="mt-1 text-sm" [class.text-danger]="n.status === 'failed'" [class.text-warning]="n.status === 'skipped'">
+                {{ status[n.status].label }}: {{ n.reason }}
+              </p>
+            }
+          </div>
+          <div class="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
+            <app-status-tag [tone]="status[n.status].tone">{{ status[n.status].label }}</app-status-tag>
+            <time class="text-xs text-muted tabular-nums" [attr.datetime]="n.createdAt">{{
+              n.createdAt | date: 'MMM d, HH:mm:ss'
+            }}</time>
+          </div>
+        </li>
+      }
+    </ol>
+  }
+</div>

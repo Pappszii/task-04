@@ -11,7 +11,7 @@ World Alerts proof of concept. Design and acceptance criteria are in [CLAUDE.md]
 | Mock news / market / disaster sources on a timer, `POST /api/dev/events` | done, unit tested |
 | Full REST API, demo identity, admin guard, SSE stream | done, integration tested |
 | `/web` shell: header nav, demo-user switcher, live status, lazy routes, `adminGuard`, API layer, SSE `RealtimeService` | done, unit tested |
-| `/web` Alerts, My notifications, Settings pages | placeholders (plan step 8) |
+| `/web` Alerts (list, create/edit dialog, active switch, delete confirm), My notifications (live via SSE), Settings (contact per channel) | done, component tested |
 | `/web` Admin channels page | placeholder (plan step 9) |
 
 ## Commands
@@ -75,9 +75,13 @@ Checked together at scaffold time (2026-09-29):
 - `core/session.service.ts`: the current demo user (signals). `core/demo-user.interceptor.ts` sends it as `X-Demo-User`.
 - `core/realtime.service.ts`: one SSE connection per demo user, exposed as signals (`status`, `notifications`, `lastChannelChange`). `EVENT_SOURCE_FACTORY` lets tests pass a fake `EventSource`.
 - `core/admin.guard.ts`: `canMatch` guard for `/admin/*`.
-- `pages/`: one lazy-loaded component per route.
-- `testing/fakes.ts`: fake APIs and a fake `EventSource`.
-- Design tokens are in `src/styles.css` (`@theme`).
+- `core/available-channels.ts`: the enabled channels, reloaded on every SSE `channel-changed`. The alert form's channel picker and Settings both read it, so an admin toggle shows up without a refresh.
+- `pages/`: one lazy-loaded component per route. Data comes from `rxResource`s keyed on the demo user, so switching user reloads each page.
+- `ui/`: pieces shared by several pages: status tag, toast service and outlet, loading/empty/error states.
+- `testing/`: fake APIs, a fake `EventSource`, and `setupFakes()` to wire them into TestBed. `src/test-setup.ts` adds the `<dialog>` methods jsdom lacks.
+- Design tokens and the shared control styles (`btn`, `input-field`, `switch`, ...) are in `src/styles.css`.
+
+Notifications carry `ruleName`, `channelName` and an event summary copied at delivery time, so history reads correctly after a rule is deleted or a channel disabled.
 
 ## Adding a channel
 

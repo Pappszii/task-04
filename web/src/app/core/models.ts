@@ -4,6 +4,12 @@ export type Category = 'news' | 'markets' | 'disasters';
 
 export const CATEGORIES: readonly Category[] = ['news', 'markets', 'disasters'];
 
+export const CATEGORY_LABELS: Record<Category, string> = {
+  news: 'News',
+  markets: 'Markets',
+  disasters: 'Disasters',
+};
+
 export type Severity = 1 | 2 | 3 | 4 | 5;
 
 export type Role = 'user' | 'admin';
@@ -85,6 +91,8 @@ export interface AlertNotification {
   eventId: string;
   event: EventSummary;
   channelId: string;
+  /** Copied at delivery time, so it survives the channel being disabled. */
+  channelName: string;
   status: NotificationStatus;
   reason?: string;
   payload?: Record<string, unknown>;

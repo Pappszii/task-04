@@ -1,23 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEMO_USERS, FakeEventSource, fakeEventSourceFactory, FakeUsersApi } from '../testing/fakes';
+import {
+  DEMO_USERS,
+  FakeEventSource,
+  fakeEventSourceFactory,
+  FakeUsersApi,
+  makeNotification,
+} from '../testing/fakes';
 import { UsersApi } from './api/users-api';
-import type { AlertNotification, DemoUser } from './models';
+import type { DemoUser } from './models';
 import { EVENT_SOURCE_FACTORY, RealtimeService } from './realtime.service';
 import { SessionService } from './session.service';
 
-const notification = (id: string, userId = 'u-alice'): AlertNotification => ({
-  id,
-  userId,
-  ruleId: 'r-1',
-  ruleName: 'Quakes',
-  eventId: 'e-1',
-  event: { title: 'Quake', category: 'disasters', severity: 5, occurredAt: '2026-01-01T00:00:00.000Z' },
-  channelId: 'email',
-  status: 'sent',
-  createdAt: '2026-01-01T00:00:00.000Z',
-});
+const notification = (id: string) => makeNotification({ id });
 
 describe('RealtimeService', () => {
   let api: FakeUsersApi;

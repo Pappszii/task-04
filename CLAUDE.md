@@ -33,7 +33,7 @@ Users create alerts and are notified via email and Slack when matching world eve
 **Tailwind and CSS**
 - Tailwind CSS 4 (via `@tailwindcss/postcss`) for layout, spacing, typography, colour and responsive utilities.
 - Design tokens (colours, radius) are CSS custom properties declared in `@theme` in the global stylesheet `web/src/styles.css`, and used through the utilities they generate (`bg-surface`, `text-muted`, ...). No hardcoded hex values in templates.
-- Plain CSS is allowed in the global stylesheet for the few things utilities cannot express cleanly (e.g. the switch control, `<dialog>` backdrop). No component-level CSS unless a utility class genuinely cannot express it.
+- Plain CSS is allowed in the global stylesheet for the few things utilities cannot express cleanly (e.g. the switch control, `<dialog>` backdrop). Control styles repeated across pages (`btn`, `btn-primary`, `input-field`, `switch`, ...) are defined once there as Tailwind `@utility` classes. No component-level CSS unless a utility class genuinely cannot express it.
 - Light theme only. Add a dark mode only if it is actually implemented end to end.
 
 **Look and behaviour**

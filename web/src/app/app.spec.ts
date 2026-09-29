@@ -1,28 +1,18 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
-import { throwError } from 'rxjs';
+import { Router } from '@angular/router';
+import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
-import { UsersApi } from './core/api/users-api';
-import { EVENT_SOURCE_FACTORY } from './core/realtime.service';
 import { DEMO_USER_STORAGE_KEY } from './core/session.service';
-import { FakeEventSource, fakeEventSourceFactory, FakeUsersApi } from './testing/fakes';
+import { DEMO_USERS, FakeEventSource } from './testing/fakes';
+import { type Fakes, setupFakes } from './testing/setup';
 
 describe('App shell', () => {
-  let api: FakeUsersApi;
+  let fakes: Fakes;
 
   beforeEach(() => {
-    localStorage.clear();
-    FakeEventSource.reset();
-    api = new FakeUsersApi();
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter(routes),
-        { provide: UsersApi, useValue: api },
-        { provide: EVENT_SOURCE_FACTORY, useValue: fakeEventSourceFactory },
-      ],
-    });
+    fakes = setupFakes(routes);
   });
 
   const render = async (url = '/alerts') => {
@@ -36,7 +26,7 @@ describe('App shell', () => {
   const navLabels = (el: HTMLElement) =>
     [...el.querySelectorAll('nav[aria-label="Main"] a')].map((a) => a.textContent?.trim());
 
-  const switcher = (el: HTMLElement) => el.querySelector<HTMLSelectElement>('select')!;
+  const switcher = (el: HTMLElement) => el.querySelector<HTMLSelectElement>('#demo-user')!;
 
   const switchTo = async (fixture: Awaited<ReturnType<typeof render>>['fixture'], userId: string) => {
     const select = switcher(fixture.nativeElement as HTMLElement);
@@ -51,6 +41,7 @@ describe('App shell', () => {
     const options = [...switcher(el).options].map((o) => o.textContent?.trim());
     expect(options).toEqual(['Alice', 'Bob', 'Admin (admin)']);
     expect(switcher(el).value).toBe('u-alice');
+    expect(switcher(el).labels?.[0]?.textContent?.trim()).toBe('Acting as');
     expect(el.querySelector('h1')?.textContent).toContain('Alerts');
   });
 
@@ -83,26 +74,27 @@ describe('App shell', () => {
 
   it('shows the live connection state as text', async () => {
     const { fixture, el } = await render();
-    expect(el.querySelector('[role="status"]')?.textContent).toContain('Connecting');
+    const live = () => el.querySelector('header [role="status"]')?.textContent;
+    expect(live()).toContain('Connecting');
 
     FakeEventSource.latest().open();
     await fixture.whenStable();
 
-    expect(el.querySelector('[role="status"]')?.textContent).toContain('Live');
+    expect(live()).toContain('Live');
   });
 
   it('shows an error with a retry when the demo users cannot load', async () => {
-    api.demoUsers$ = throwError(() => new Error('offline'));
+    fakes.users.demoUsers$ = throwError(() => new Error('offline'));
     const { fixture, el } = await render();
 
-    expect(el.querySelector('[role="alert"]')?.textContent).toContain('Could not load the demo users');
-    expect(el.querySelector('select')).toBeNull();
+    expect(el.querySelector('main [role="alert"]')?.textContent).toContain('Could not load the demo users');
+    expect(el.querySelector('#demo-user')).toBeNull();
 
-    api.demoUsers$ = new FakeUsersApi().demoUsers$;
-    el.querySelector<HTMLButtonElement>('[role="alert"] button')!.click();
+    fakes.users.demoUsers$ = of(DEMO_USERS);
+    el.querySelector<HTMLButtonElement>('main [role="alert"] button')!.click();
     await fixture.whenStable();
 
-    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.querySelector('main [role="alert"]')).toBeNull();
     expect(switcher(el).value).toBe('u-alice');
   });
 });

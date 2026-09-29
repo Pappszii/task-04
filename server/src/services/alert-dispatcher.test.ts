@@ -57,6 +57,9 @@ describe('AlertDispatcher', () => {
       ruleId: 'r-1',
       eventId: 'e-1',
       channelId: 'stub',
+      channelName: 'Stub stub',
+      ruleName: 'Test rule',
+      event: { title: 'Earthquake near coast', category: 'disasters', severity: 4 },
       status: 'sent',
       payload: { to: 'dest-1' },
     });
@@ -166,7 +169,7 @@ describe('AlertDispatcher', () => {
 
       const [notification] = await dispatcher.dispatch(makeEvent());
 
-      expect(notification).toMatchObject({ status: 'skipped' });
+      expect(notification).toMatchObject({ status: 'skipped', channelName: 'gone' });
       expect(notification?.reason).toMatch(/not registered/);
     });
 

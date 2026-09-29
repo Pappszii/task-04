@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { RealtimeService, type RealtimeStatus } from './core/realtime.service';
 import { SessionService } from './core/session.service';
+import { ToastOutlet } from './ui/toast-outlet';
 
 interface NavLink {
   path: string;
@@ -18,7 +19,7 @@ const LIVE_STATUS: Record<RealtimeStatus, { label: string; dot: string } | null>
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastOutlet],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

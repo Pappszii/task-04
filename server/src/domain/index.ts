@@ -59,6 +59,8 @@ export interface Notification {
   eventId: string;
   event: EventSummary;
   channelId: string;
+  /** Copied at delivery time, like `ruleName`; the channel id when the channel is not registered. */
+  channelName: string;
   status: NotificationStatus;
   /** Set for `failed` and `skipped`. */
   reason?: string;

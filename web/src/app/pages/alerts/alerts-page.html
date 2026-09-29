@@ -1,0 +1,113 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold">Alerts</h1>
+    <p class="mt-1 text-sm text-muted">Get notified when a world event matches one of your alerts.</p>
+  </div>
+  @if (rules.hasValue() && rules.value().length > 0) {
+    <button type="button" class="btn btn-primary" (click)="openCreate()">New alert</button>
+  }
+</div>
+
+<div class="mt-6">
+  @if (rules.error()) {
+    <app-error-state title="Could not load your alerts." [messages]="errorMessages()" (retry)="rules.reload()" />
+  } @else if (!rules.hasValue()) {
+    <app-loading-state label="Loading alerts…" />
+  } @else if (rules.value().length === 0) {
+    <app-empty-state title="No alerts yet">
+      <p>Create one to hear about breaking news, market moves or disasters.</p>
+      <button type="button" class="btn btn-primary mt-4" (click)="openCreate()">Create your first alert</button>
+    </app-empty-state>
+  } @else {
+    <ul class="flex flex-col gap-3" aria-label="Your alerts">
+      @for (rule of rules.value(); track rule.id) {
+        <li class="rounded-lg border border-line bg-surface p-4" [class.opacity-70]="!rule.enabled">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0 flex-1 basis-60">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="font-medium">{{ rule.name }}</h2>
+                <app-status-tag tone="accent">{{ categoryLabels[rule.category] }}</app-status-tag>
+                @if (!rule.enabled) {
+                  <app-status-tag tone="neutral">Paused</app-status-tag>
+                }
+              </div>
+              <p class="mt-1 text-sm text-muted">{{ describe(rule) }}</p>
+              <p class="mt-1 text-sm">
+                <span class="mr-1 text-muted">Sends to:</span>
+                @for (channelId of rule.channelIds; track channelId; let last = $last) {
+                  <span [class.text-warning]="!isAvailable(channelId)">{{ channelLabel(channelId) }}</span
+                  >{{ last ? '' : ', ' }}
+                }
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <label class="mr-2 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  class="switch"
+                  [checked]="rule.enabled"
+                  [disabled]="busyRuleIds().has(rule.id)"
+                  [attr.aria-label]="'Active: ' + rule.name"
+                  (change)="toggleEnabled(rule, $event)"
+                />
+                <span class="max-sm:sr-only" aria-hidden="true">Active</span>
+              </label>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                [attr.aria-label]="'Edit ' + rule.name"
+                [disabled]="busyRuleIds().has(rule.id)"
+                (click)="openEdit(rule)"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                class="btn btn-ghost text-danger"
+                [attr.aria-label]="'Delete ' + rule.name"
+                [disabled]="busyRuleIds().has(rule.id)"
+                (click)="askDelete(rule)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+<dialog
+  #formDialog
+  aria-labelledby="alert-form-title"
+  class="m-auto w-[min(36rem,calc(100vw-2rem))] max-h-[calc(100dvh-2rem)] rounded-xl bg-surface p-5 text-ink shadow-xl"
+  (close)="onFormClosed()"
+>
+  @if (formOpen()) {
+    <app-alert-form
+      [channels]="channels.list()"
+      [rule]="editing()"
+      (saved)="onSaved($event)"
+      (cancelled)="closeForm()"
+    />
+  }
+</dialog>
+
+<dialog
+  #deleteDialog
+  aria-labelledby="delete-title"
+  aria-describedby="delete-description"
+  class="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-xl bg-surface p-5 text-ink shadow-xl"
+>
+  <h2 id="delete-title" class="text-lg font-semibold">Delete alert?</h2>
+  <p id="delete-description" class="mt-2 text-sm text-muted">
+    "{{ deleting()?.name }}" will stop notifying you. This can't be undone.
+  </p>
+  <div class="mt-5 flex justify-end gap-2">
+    <button type="button" class="btn btn-secondary" autofocus (click)="cancelDelete()">Cancel</button>
+    <button type="button" class="btn btn-danger" (click)="confirmDelete()">Delete</button>
+  </div>
+</dialog>

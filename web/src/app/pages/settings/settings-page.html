@@ -1,0 +1,61 @@
+<h1 class="text-2xl font-semibold">Settings</h1>
+<p class="mt-1 text-sm text-muted">Where your alerts are delivered. Leave a field empty to stop deliveries there.</p>
+
+<div class="mt-6 max-w-xl">
+  @if (loadError()) {
+    <app-error-state title="Could not load your settings." [messages]="[]" (retry)="retry()" />
+  } @else if (loading()) {
+    <app-loading-state label="Loading settings…" />
+  } @else if (fields().length === 0) {
+    <app-empty-state title="No channels available">
+      <p>There is nowhere to send alerts right now. Check back after an admin enables a channel.</p>
+    </app-empty-state>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate class="rounded-lg border border-line bg-surface p-5">
+      @if (errors().length > 0) {
+        <div role="alert" class="mb-4 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+          <p class="font-medium">Settings were not saved.</p>
+          <ul class="mt-1 list-disc pl-5">
+            @for (message of errors(); track $index) {
+              <li>{{ message }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="flex flex-col gap-5">
+        @for (channel of fields(); track channel.id) {
+          @let fieldError = fieldErrors().get(channel.id);
+          <div>
+            <label [for]="'contact-' + channel.id" class="text-sm font-medium">{{ channel.displayName }}</label>
+            <input
+              [id]="'contact-' + channel.id"
+              type="text"
+              class="input-field mt-1"
+              autocomplete="off"
+              [formControlName]="channel.id"
+              [placeholder]="'Your ' + channel.destinationKind"
+              [attr.aria-invalid]="fieldError ? true : null"
+              [attr.aria-describedby]="'contact-' + channel.id + '-hint'"
+            />
+            <p [id]="'contact-' + channel.id + '-hint'" class="mt-1 text-xs" [class.text-danger]="fieldError">
+              @if (fieldError) {
+                {{ fieldError }}
+              } @else if (hasDestination(channel.id)) {
+                <span class="text-muted">Your {{ channel.destinationKind }}.</span>
+              } @else {
+                <span class="text-warning">Not set: alerts sent to {{ channel.displayName }} are skipped.</span>
+              }
+            </p>
+          </div>
+        }
+      </div>
+
+      <div class="mt-6 flex justify-end border-t border-line pt-4">
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save settings' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

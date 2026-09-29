@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { type CanMatchFn, provideRouter, Router, type Route, UrlTree } from '@angular/router';
+import { type CanMatchFn, Router, type Route, UrlTree } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Subject, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { routes } from '../app.routes';
 import { AdminChannelsPage } from '../pages/admin/admin-channels-page';
-import { DEMO_USERS, FakeUsersApi } from '../testing/fakes';
+import { DEMO_USERS, type FakeUsersApi } from '../testing/fakes';
+import { setupFakes } from '../testing/setup';
 import { adminGuard } from './admin.guard';
-import { UsersApi } from './api/users-api';
 import type { DemoUser } from './models';
 import { SessionService } from './session.service';
 
@@ -15,11 +15,7 @@ describe('adminGuard (AC12)', () => {
   let api: FakeUsersApi;
 
   beforeEach(() => {
-    localStorage.clear();
-    api = new FakeUsersApi();
-    TestBed.configureTestingModule({
-      providers: [provideRouter(routes), { provide: UsersApi, useValue: api }],
-    });
+    api = setupFakes(routes).users;
   });
 
   // The guard ignores its arguments, so empty stand-ins are enough.

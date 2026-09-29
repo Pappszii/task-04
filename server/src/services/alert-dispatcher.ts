@@ -66,6 +66,7 @@ export class AlertDispatcher {
         occurredAt: event.occurredAt,
       },
       channelId,
+      channelName: this.deps.registry.get(channelId)?.displayName ?? channelId,
       createdAt: this.now().toISOString(),
     };
     const outcome = await this.attempt(event, rule, user, channelId);
