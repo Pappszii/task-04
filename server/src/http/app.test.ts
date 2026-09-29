@@ -42,24 +42,30 @@ describe('public routes', () => {
   });
 
   describe('GET /api/channels', () => {
-    it('lists enabled channels with what each needs', async () => {
-      const api = apiClient(await start());
+    // Expectations come from the registry, so registering another channel needs no change here.
+    it('lists every registered channel with what each needs', async () => {
+      const container = createContainer({ eventSources: [] });
+      const api = apiClient(await start(container));
 
-      expect((await api('GET', '/api/channels')).body).toEqual([
-        { id: 'email', displayName: 'Email', destinationKind: 'email address' },
-        { id: 'slack', displayName: 'Slack', destinationKind: 'Slack handle' },
-      ]);
+      const { body } = await api('GET', '/api/channels');
+
+      expect(body).toEqual(
+        container.registry.list().map(({ id, displayName, destinationKind }) => ({ id, displayName, destinationKind })),
+      );
+      expect(body).toContainEqual({ id: 'email', displayName: 'Email', destinationKind: 'email address' });
     });
 
     it('includes a newly registered channel and hides a disabled one', async () => {
       const container = createContainer({ eventSources: [] });
-      container.registry.register(new StubChannel('webhook'));
+      container.registry.register(new StubChannel('pager'));
       await container.channelSettings.setEnabled('slack', false);
       const api = apiClient(await start(container));
 
-      const { body } = await api<{ id: string }[]>('GET', '/api/channels');
+      const ids = (await api<{ id: string }[]>('GET', '/api/channels')).body.map((c) => c.id);
 
-      expect(body.map((c) => c.id)).toEqual(['email', 'webhook']);
+      expect(ids).toContain('pager');
+      expect(ids).toContain('email');
+      expect(ids).not.toContain('slack');
     });
   });
 });

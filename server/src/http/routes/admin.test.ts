@@ -40,24 +40,31 @@ describe('admin guard (AC12)', () => {
 });
 
 describe('GET /api/admin/channels', () => {
+  // Expectations come from the registry, so registering another channel needs no change here.
   it('lists every registered channel with its enabled flag, including disabled ones', async () => {
     await container.channelSettings.setEnabled('slack', false);
 
-    expect(await as('u-admin')('GET', '/api/admin/channels')).toEqual({
-      status: 200,
-      body: [
-        { id: 'email', displayName: 'Email', destinationKind: 'email address', enabled: true },
-        { id: 'slack', displayName: 'Slack', destinationKind: 'Slack handle', enabled: false },
-      ],
-    });
+    const { status, body } = await as('u-admin')('GET', '/api/admin/channels');
+
+    expect(status).toBe(200);
+    expect(body).toEqual(
+      container.registry.list().map(({ id, displayName, destinationKind }) => ({
+        id,
+        displayName,
+        destinationKind,
+        enabled: id !== 'slack',
+      })),
+    );
+    expect(body).toContainEqual({ id: 'slack', displayName: 'Slack', destinationKind: 'Slack handle', enabled: false });
   });
 
   it('includes a newly registered channel automatically (AC10)', async () => {
-    container.registry.register(new StubChannel('webhook'));
+    container.registry.register(new StubChannel('pager'));
 
     const { body } = await as('u-admin')<{ id: string }[]>('GET', '/api/admin/channels');
 
-    expect(body.map((c) => c.id)).toEqual(['email', 'slack', 'webhook']);
+    expect(body.map((c) => c.id)).toEqual(container.registry.list().map((c) => c.id));
+    expect(body.map((c) => c.id)).toContain('pager');
   });
 });
 
@@ -105,7 +112,8 @@ describe('disabling a channel end to end (AC13)', () => {
     await as('u-admin')('PATCH', '/api/admin/channels/slack', { enabled: false });
 
     const picker = await as('u-alice')<{ id: string }[]>('GET', '/api/channels');
-    expect(picker.body.map((c) => c.id)).toEqual(['email']);
+    expect(picker.body.map((c) => c.id)).toContain('email');
+    expect(picker.body.map((c) => c.id)).not.toContain('slack');
 
     await as()('POST', '/api/dev/events', quake);
     const whileDisabled = await container.notifications.listByUser('u-alice');
@@ -118,7 +126,7 @@ describe('disabling a channel end to end (AC13)', () => {
     await as('u-admin')('PATCH', '/api/admin/channels/slack', { enabled: true });
 
     const restored = await as('u-alice')<{ id: string }[]>('GET', '/api/channels');
-    expect(restored.body.map((c) => c.id)).toEqual(['email', 'slack']);
+    expect(restored.body.map((c) => c.id)).toContain('slack');
     await as()('POST', '/api/dev/events', quake);
     const [latestSlack] = (await container.notifications.listByUser('u-alice')).filter(
       (n) => n.channelId === 'slack',
