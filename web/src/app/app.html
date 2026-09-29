@@ -1,0 +1,76 @@
+<a
+  href="#main"
+  class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2"
+  >Skip to content</a
+>
+
+<header class="border-b border-line bg-surface">
+  <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
+    <a routerLink="/alerts" class="text-lg font-semibold tracking-tight">World Alerts</a>
+
+    <nav aria-label="Main" class="order-last -mx-1 w-full overflow-x-auto sm:order-none sm:mx-0 sm:w-auto">
+      <ul class="flex gap-1">
+        @for (link of links(); track link.path) {
+          <li>
+            <a
+              [routerLink]="link.path"
+              routerLinkActive="bg-accent-soft text-accent"
+              ariaCurrentWhenActive="page"
+              class="block whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-muted hover:text-ink"
+              >{{ link.label }}</a
+            >
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <div class="ml-auto flex items-center gap-3">
+      @if (liveStatus(); as live) {
+        <span role="status" class="flex items-center gap-1.5 text-xs text-muted">
+          <span class="size-2 rounded-full {{ live.dot }}" aria-hidden="true"></span>
+          {{ live.label }}
+        </span>
+      }
+
+      @if (session.status() === 'ready') {
+        <div class="flex items-center gap-2 text-sm">
+          <label for="demo-user" class="text-muted max-sm:sr-only">Acting as</label>
+          <select
+            id="demo-user"
+            class="rounded-md border border-line bg-surface py-1.5 pl-2 pr-8 text-sm"
+            (change)="selectUser($event)"
+          >
+            @for (user of session.users(); track user.id) {
+              <option [value]="user.id" [selected]="user.id === session.currentUserId()">
+                {{ user.name }}{{ user.role === 'admin' ? ' (admin)' : '' }}
+              </option>
+            }
+          </select>
+        </div>
+      }
+    </div>
+  </div>
+</header>
+
+<main id="main" tabindex="-1" class="mx-auto max-w-5xl px-4 py-6">
+  @switch (session.status()) {
+    @case ('loading') {
+      <p role="status" class="text-muted">Loading…</p>
+    }
+    @case ('error') {
+      <div role="alert" class="rounded-lg border border-danger/30 bg-danger-soft p-4">
+        <p class="font-medium text-danger">Could not load the demo users. Is the server running?</p>
+        <button
+          type="button"
+          class="mt-3 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-strong"
+          (click)="session.retry()"
+        >
+          Try again
+        </button>
+      </div>
+    }
+    @case ('ready') {
+      <router-outlet />
+    }
+  }
+</main>
