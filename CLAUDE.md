@@ -70,6 +70,7 @@ Server (`/server/src`):
 - `http/`: REST routes, SSE endpoint, `adminOnly` middleware.
 
 REST surface:
+- `GET /api/demo-users` (public; feeds the header user switcher)
 - `GET /api/me`, `GET/PUT /api/me/contacts`
 - `GET /api/channels` (enabled channels + destination requirements; drives the UI)
 - `GET/POST/PUT/DELETE /api/rules`

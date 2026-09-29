@@ -6,6 +6,10 @@ export class EventBus<T> {
 
   constructor(private readonly onError: (error: unknown) => void = () => {}) {}
 
+  get subscriberCount(): number {
+    return this.handlers.size;
+  }
+
   /** Returns an unsubscribe function. */
   subscribe(handler: Handler<T>): () => void {
     this.handlers.add(handler);

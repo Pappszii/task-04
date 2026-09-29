@@ -7,7 +7,7 @@ import {
 import { createMockEventSources } from './adapters/mock-event-sources.js';
 import { seedRules, seedUsers } from './adapters/seed.js';
 import { registerChannels } from './channels.js';
-import type { Notification, WorldEvent } from './domain/index.js';
+import type { ChannelState, Notification, WorldEvent } from './domain/index.js';
 import type { EventSource } from './ports/index.js';
 import { AlertDispatcher } from './services/alert-dispatcher.js';
 import { ChannelRegistry } from './services/channel-registry.js';
@@ -21,8 +21,10 @@ export interface Container {
   registry: ChannelRegistry;
   /** Publish a world event here to run it through matching and delivery. */
   worldEvents: EventBus<WorldEvent>;
-  /** Every stored notification is published here (the SSE layer subscribes in a later step). */
+  /** Every stored notification is published here; the SSE stream subscribes. */
   notificationBus: EventBus<Notification>;
+  /** Admin enable/disable changes are published here; the SSE stream subscribes. */
+  channelEvents: EventBus<ChannelState>;
   dispatcher: AlertDispatcher;
   /** Wired to `worldEvents` but not started; the entry point calls `start()` on each. */
   eventSources: EventSource[];
@@ -44,6 +46,7 @@ export function createContainer(options: ContainerOptions = {}): Container {
   const logError = (error: unknown) => console.error('[bus] handler failed', error);
   const worldEvents = new EventBus<WorldEvent>(logError);
   const notificationBus = new EventBus<Notification>(logError);
+  const channelEvents = new EventBus<ChannelState>(logError);
 
   const dispatcher = new AlertDispatcher({
     rules,
@@ -71,6 +74,7 @@ export function createContainer(options: ContainerOptions = {}): Container {
     registry,
     worldEvents,
     notificationBus,
+    channelEvents,
     dispatcher,
     eventSources,
   };

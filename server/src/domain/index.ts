@@ -1,5 +1,7 @@
 export type Category = 'news' | 'markets' | 'disasters';
 
+export const CATEGORIES: readonly Category[] = ['news', 'markets', 'disasters'];
+
 export type Severity = 1 | 2 | 3 | 4 | 5;
 
 export interface WorldEvent {
@@ -45,11 +47,17 @@ export interface User {
 
 export type NotificationStatus = 'sent' | 'failed' | 'skipped';
 
+/** What a notification shows about its event. Copied at delivery time; events are not stored. */
+export type EventSummary = Pick<WorldEvent, 'title' | 'category' | 'severity' | 'occurredAt'>;
+
 export interface Notification {
   id: string;
   userId: string;
   ruleId: string;
+  /** Copied at delivery time so history survives the rule being renamed or deleted. */
+  ruleName: string;
   eventId: string;
+  event: EventSummary;
   channelId: string;
   status: NotificationStatus;
   /** Set for `failed` and `skipped`. */

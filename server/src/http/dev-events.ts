@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Category, Severity, WorldEvent } from '../domain/index.js';
-
-const CATEGORIES: readonly Category[] = ['news', 'markets', 'disasters'];
+import { CATEGORIES, type Category, type Severity, type WorldEvent } from '../domain/index.js';
 
 export type ParsedEvent = { ok: true; event: WorldEvent } | { ok: false; errors: string[] };
 

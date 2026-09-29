@@ -57,7 +57,14 @@ export class AlertDispatcher {
       id: this.newId(),
       userId: rule.userId,
       ruleId: rule.id,
+      ruleName: rule.name,
       eventId: event.id,
+      event: {
+        title: event.title,
+        category: event.category,
+        severity: event.severity,
+        occurredAt: event.occurredAt,
+      },
       channelId,
       createdAt: this.now().toISOString(),
     };

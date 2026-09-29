@@ -1,61 +1,72 @@
-import express from 'express';
+import express, { type ErrorRequestHandler } from 'express';
 import type { Container } from '../container.js';
-import { parseWorldEvent } from './dev-events.js';
+import { adminOnly, identify } from './identity.js';
+import { adminChannelsRouter, channelsRouter } from './routes/channels.js';
+import { devRouter } from './routes/dev.js';
+import { meRouter } from './routes/me.js';
+import { notificationsRouter } from './routes/notifications.js';
+import { rulesRouter } from './routes/rules.js';
+import { streamHandler } from './routes/stream.js';
 
 export interface AppOptions {
   /** Mounts `POST /api/dev/events`. Defaults to on outside production. */
   devRoutes?: boolean;
 }
 
+/**
+ * Error bodies: `{ errors: string[] }` for 400 validation failures, `{ error: string }` otherwise.
+ */
 export function createApp(container: Container, options: AppOptions = {}): express.Express {
   const devRoutes = options.devRoutes ?? process.env['NODE_ENV'] !== 'production';
   const app = express();
   app.use(express.json());
 
+  // Public: no demo user needed.
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
-
-  // Drives the channel picker and Settings in the UI: enabled channels and what each needs.
-  app.get('/api/channels', async (_req, res) => {
-    const channels = container.registry.list();
-    const enabled = await Promise.all(
-      channels.map(async (channel) => ({
-        channel,
-        enabled: await container.channelSettings.isEnabled(channel.id),
-      })),
-    );
-    res.json(
-      enabled
-        .filter((entry) => entry.enabled)
-        .map(({ channel }) => ({
-          id: channel.id,
-          displayName: channel.displayName,
-          destinationKind: channel.destinationKind,
-        })),
-    );
+  // Feeds the header user switcher.
+  app.get('/api/demo-users', async (_req, res) => {
+    const users = await container.users.list();
+    res.json(users.map(({ id, name, role }) => ({ id, name, role })));
   });
+  app.use('/api/channels', channelsRouter(container));
+  if (devRoutes) app.use('/api/dev', devRouter(container));
+  app.get('/api/stream', identify(container, { allowQuery: true }), streamHandler(container));
 
-  if (devRoutes) {
-    // Demo trigger: runs a hand-made event through the same path as the mock feeds.
-    app.post('/api/dev/events', async (req, res) => {
-      const parsed = parseWorldEvent(req.body);
-      if (!parsed.ok) {
-        res.status(400).json({ errors: parsed.errors });
-        return;
-      }
-      await container.worldEvents.publish(parsed.event);
-      res.status(201).json({ event: parsed.event });
-    });
-  }
+  // Everything below needs `X-Demo-User`.
+  app.use('/api', identify(container));
+  app.use('/api/me', meRouter(container));
+  app.use('/api/rules', rulesRouter(container));
+  app.use('/api/notifications', notificationsRouter(container));
+  app.use('/api/admin', adminOnly);
+  app.use('/api/admin/channels', adminChannelsRouter(container));
 
-  app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (typeof error === 'object' && error !== null && 'type' in error && error.type === 'entity.parse.failed') {
-      res.status(400).json({ errors: ['body is not valid JSON'] });
-      return;
-    }
-    next(error);
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'not found' });
   });
+  app.use(errorHandler);
 
   return app;
+}
+
+const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, next) => {
+  if (isClientError(error)) {
+    const message = error.type === 'entity.parse.failed' ? 'body is not valid JSON' : error.message;
+    res.status(error.status).json({ errors: [message] });
+    return;
+  }
+  console.error('[http] unhandled error', error);
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+  res.status(500).json({ error: 'internal error' });
+};
+
+/** A 4xx raised by `express.json()` (bad JSON, body too large, ...). */
+function isClientError(error: unknown): error is { status: number; type?: string; message: string } {
+  if (typeof error !== 'object' || error === null || !('status' in error)) return false;
+  const { status } = error;
+  return typeof status === 'number' && status >= 400 && status < 500 && error instanceof Error;
 }
