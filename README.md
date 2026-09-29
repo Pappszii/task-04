@@ -12,7 +12,7 @@ World Alerts proof of concept. Design and acceptance criteria are in [CLAUDE.md]
 | Full REST API, demo identity, admin guard, SSE stream | done, integration tested |
 | `/web` shell: header nav, demo-user switcher, live status, lazy routes, `adminGuard`, API layer, SSE `RealtimeService` | done, unit tested |
 | `/web` Feed (home page, live via SSE), Alerts (list, create/edit dialog, active switch, delete confirm), Settings (contact per channel) | done, component tested |
-| `/web` Admin channels page | placeholder (plan step 9) |
+| `/web` Admin channels page (every registered channel, enable/disable, live across tabs) | done, component tested |
 
 ## Commands
 

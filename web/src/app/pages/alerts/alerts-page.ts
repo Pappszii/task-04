@@ -11,6 +11,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { apiErrorMessages } from '../../core/api/api-errors';
 import { RulesApi } from '../../core/api/rules-api';
 import { AvailableChannels } from '../../core/available-channels';
+import { BusySet } from '../../core/busy-set';
 import { type AlertRule, CATEGORY_LABELS } from '../../core/models';
 import { toRuleInput } from '../../core/rules';
 import { SessionService } from '../../core/session.service';
@@ -43,7 +44,7 @@ export class AlertsPage {
   protected readonly formOpen = signal(false);
   protected readonly editing = signal<AlertRule | null>(null);
   protected readonly deleting = signal<AlertRule | null>(null);
-  protected readonly busyRuleIds = signal<ReadonlySet<string>>(new Set());
+  protected readonly busy = new BusySet();
 
   protected readonly categoryLabels = CATEGORY_LABELS;
 
@@ -83,15 +84,15 @@ export class AlertsPage {
   protected toggleEnabled(rule: AlertRule, event: Event): void {
     const checkbox = event.target as HTMLInputElement;
     const enabled = checkbox.checked;
-    this.setBusy(rule.id, true);
+    this.busy.add(rule.id);
     this.api.update(rule.id, { ...toRuleInput(rule), enabled }).subscribe({
       next: (saved) => {
-        this.setBusy(rule.id, false);
+        this.busy.delete(rule.id);
         this.upsert(saved);
         this.toast.success(`Alert "${saved.name}" ${saved.enabled ? 'turned on' : 'paused'}.`);
       },
       error: (error: unknown) => {
-        this.setBusy(rule.id, false);
+        this.busy.delete(rule.id);
         checkbox.checked = rule.enabled;
         this.toast.error(`Could not update "${rule.name}": ${apiErrorMessages(error).join(' ')}`);
       },
@@ -110,16 +111,16 @@ export class AlertsPage {
   protected confirmDelete(): void {
     const rule = this.deleting();
     if (!rule) return;
-    this.setBusy(rule.id, true);
+    this.busy.add(rule.id);
     this.api.delete(rule.id).subscribe({
       next: () => {
-        this.setBusy(rule.id, false);
+        this.busy.delete(rule.id);
         this.rules.value.update((rules) => rules?.filter((r) => r.id !== rule.id));
         this.deleteDialog().nativeElement.close();
         this.toast.success(`Alert "${rule.name}" deleted.`);
       },
       error: (error: unknown) => {
-        this.setBusy(rule.id, false);
+        this.busy.delete(rule.id);
         this.deleteDialog().nativeElement.close();
         this.toast.error(`Could not delete "${rule.name}": ${apiErrorMessages(error).join(' ')}`);
       },
@@ -150,15 +151,6 @@ export class AlertsPage {
     this.rules.value.update((rules = []) => {
       const index = rules.findIndex((r) => r.id === saved.id);
       return index === -1 ? [...rules, saved] : rules.map((r) => (r.id === saved.id ? saved : r));
-    });
-  }
-
-  private setBusy(ruleId: string, busy: boolean): void {
-    this.busyRuleIds.update((ids) => {
-      const next = new Set(ids);
-      if (busy) next.add(ruleId);
-      else next.delete(ruleId);
-      return next;
     });
   }
 }

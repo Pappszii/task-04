@@ -48,7 +48,7 @@
                   role="switch"
                   class="switch"
                   [checked]="rule.enabled"
-                  [disabled]="busyRuleIds().has(rule.id)"
+                  [disabled]="busy.has(rule.id)"
                   [attr.aria-label]="'Active: ' + rule.name"
                   (change)="toggleEnabled(rule, $event)"
                 />
@@ -58,7 +58,7 @@
                 type="button"
                 class="btn btn-secondary"
                 [attr.aria-label]="'Edit ' + rule.name"
-                [disabled]="busyRuleIds().has(rule.id)"
+                [disabled]="busy.has(rule.id)"
                 (click)="openEdit(rule)"
               >
                 Edit
@@ -67,7 +67,7 @@
                 type="button"
                 class="btn btn-ghost text-danger"
                 [attr.aria-label]="'Delete ' + rule.name"
-                [disabled]="busyRuleIds().has(rule.id)"
+                [disabled]="busy.has(rule.id)"
                 (click)="askDelete(rule)"
               >
                 Delete

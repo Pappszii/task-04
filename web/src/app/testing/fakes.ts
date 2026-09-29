@@ -86,19 +86,28 @@ export class FakeChannelsApi extends ChannelsApi {
     { ...SLACK, enabled: true },
   ];
   listError: unknown = null;
+  listAllError: unknown = null;
+  setEnabledError: unknown = null;
+  /** When set, `list()` answers with this instead of right away, so a test can hold a load open. */
+  pendingList: Observable<Channel[]> | null = null;
   listCalls = 0;
+  listAllCalls = 0;
 
   list(): Observable<Channel[]> {
     this.listCalls += 1;
     if (this.listError) return fail(this.listError);
+    if (this.pendingList) return this.pendingList;
     return of(this.channels.filter((c) => c.enabled).map(({ enabled: _enabled, ...channel }) => channel));
   }
 
   listAll(): Observable<AdminChannel[]> {
+    this.listAllCalls += 1;
+    if (this.listAllError) return fail(this.listAllError);
     return of(this.channels.map((c) => ({ ...c })));
   }
 
   setEnabled(channelId: string, enabled: boolean): Observable<AdminChannel> {
+    if (this.setEnabledError) return fail(this.setEnabledError);
     const channel = this.channels.find((c) => c.id === channelId);
     if (!channel) return fail(httpError(404, { error: `unknown channel: ${channelId}` }));
     channel.enabled = enabled;

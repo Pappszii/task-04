@@ -1,0 +1,60 @@
+<h1 class="text-2xl font-semibold">Channels</h1>
+<p class="mt-1 max-w-2xl text-sm text-muted">
+  Turn delivery channels on or off for everyone. While a channel is off, users can't pick it, and deliveries through
+  it are recorded as skipped.
+</p>
+
+<div class="mt-6">
+  @if (channels.error()) {
+    <app-error-state title="Could not load the channels." [messages]="errorMessages()" (retry)="channels.reload()" />
+  } @else if (!channels.hasValue()) {
+    <app-loading-state label="Loading channels…" />
+  } @else if (channels.value().length === 0) {
+    <app-empty-state title="No channels registered">
+      <p>Channels are registered in the server code.</p>
+    </app-empty-state>
+  } @else {
+    <div class="overflow-hidden rounded-lg border border-line bg-surface">
+      <table class="w-full text-left text-sm">
+        <caption class="sr-only">
+          Delivery channels
+        </caption>
+        <thead class="bg-canvas text-xs text-muted">
+          <tr>
+            <th scope="col" class="px-4 py-2 font-medium">Channel</th>
+            <th scope="col" class="px-4 py-2 font-medium max-sm:hidden">Users provide</th>
+            <th scope="col" class="px-4 py-2 font-medium">Status</th>
+            <th scope="col" class="px-4 py-2 text-right font-medium">On / off</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+          @for (channel of channels.value(); track channel.id) {
+            <tr>
+              <th scope="row" class="px-4 py-3 font-medium">
+                {{ channel.displayName }}
+                <span class="block font-mono text-xs font-normal text-muted">{{ channel.id }}</span>
+              </th>
+              <td class="px-4 py-3 text-muted max-sm:hidden">{{ channel.destinationKind }}</td>
+              <td class="px-4 py-3">
+                <app-status-tag [tone]="channel.enabled ? 'success' : 'neutral'">
+                  {{ channel.enabled ? 'Enabled' : 'Disabled' }}
+                </app-status-tag>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  class="switch align-middle"
+                  [checked]="channel.enabled"
+                  [disabled]="busy.has(channel.id)"
+                  [attr.aria-label]="'Enabled: ' + channel.displayName"
+                  (change)="toggle(channel, $event)"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

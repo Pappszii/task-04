@@ -1,4 +1,4 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, effect, inject, Injectable, untracked } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { ChannelsApi } from './api/channels-api';
 import type { Channel } from './models';
@@ -13,11 +13,15 @@ export class AvailableChannels {
   private readonly api = inject(ChannelsApi);
   private readonly realtime = inject(RealtimeService);
 
-  readonly resource = rxResource({
-    params: () => ({ change: this.realtime.lastChannelChange() }),
-    stream: () => this.api.list(),
-  });
+  readonly resource = rxResource({ stream: () => this.api.list() });
 
-  /** The channels, or an empty list while loading or after an error. */
+  /** The channels, or an empty list while first loading or after an error. */
   readonly list = computed<Channel[]>(() => (this.resource.hasValue() ? this.resource.value() : []));
+
+  constructor() {
+    // reload(), not a params change: it keeps the current list on screen until the new one arrives.
+    effect(() => {
+      if (this.realtime.lastChannelChange()) untracked(() => this.resource.reload());
+    });
+  }
 }
