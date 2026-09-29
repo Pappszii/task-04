@@ -1,0 +1,48 @@
+<h1 class="text-2xl font-semibold">Feed</h1>
+<p class="mt-1 text-sm text-muted">Every notification from your alerts, newest first. New ones appear as they happen.</p>
+
+<p class="sr-only" role="status" aria-live="polite">{{ latestAnnouncement() }}</p>
+
+<div class="mt-6">
+  @if (history.error()) {
+    <app-error-state title="Could not load your feed." [messages]="errorMessages()" (retry)="history.reload()" />
+  } @else if (!history.hasValue()) {
+    <app-loading-state label="Loading your feed…" />
+  } @else if (items().length === 0) {
+    <app-empty-state title="Your feed is empty">
+      <p>When a world event matches one of your alerts, it shows up here straight away.</p>
+      <a routerLink="/alerts" class="btn btn-primary mt-4">Create an alert</a>
+    </app-empty-state>
+  } @else {
+    <ol class="flex flex-col divide-y divide-line rounded-lg border border-line bg-surface" aria-label="Feed">
+      @for (item of items(); track item.notification.id) {
+        @let n = item.notification;
+        <li class="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between" [class.bg-accent-soft]="item.isNew">
+          <div class="min-w-0">
+            <p class="flex flex-wrap items-center gap-2 font-medium">
+              @if (item.isNew) {
+                <app-status-tag tone="accent">New</app-status-tag>
+              }
+              <span class="break-words">{{ n.event.title }}</span>
+            </p>
+            <p class="mt-1 text-sm text-muted">
+              {{ categoryLabels[n.event.category] }} · severity {{ n.event.severity }} of 5 · alert
+              "{{ n.ruleName }}" · via {{ n.channelName }}
+            </p>
+            @if (n.reason) {
+              <p class="mt-1 text-sm" [class.text-danger]="n.status === 'failed'" [class.text-warning]="n.status === 'skipped'">
+                {{ status[n.status].label }}: {{ n.reason }}
+              </p>
+            }
+          </div>
+          <div class="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
+            <app-status-tag [tone]="status[n.status].tone">{{ status[n.status].label }}</app-status-tag>
+            <time class="text-xs text-muted tabular-nums" [attr.datetime]="n.createdAt">{{
+              n.createdAt | date: 'MMM d, HH:mm:ss'
+            }}</time>
+          </div>
+        </li>
+      }
+    </ol>
+  }
+</div>

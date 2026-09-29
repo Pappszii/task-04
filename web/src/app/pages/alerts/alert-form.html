@@ -1,0 +1,163 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate class="flex flex-col gap-5">
+  <h2 id="alert-form-title" class="text-lg font-semibold">{{ isEdit() ? 'Edit alert' : 'New alert' }}</h2>
+
+  @if (serverErrors().length > 0) {
+    <div role="alert" class="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+      <p class="font-medium">Could not save the alert.</p>
+      <ul class="mt-1 list-disc pl-5">
+        @for (message of serverErrors(); track $index) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  <div>
+    <label for="alert-category" class="text-sm font-medium">Category <span class="text-danger">*</span></label>
+    <select
+      id="alert-category"
+      formControlName="category"
+      class="input-field mt-1"
+      [attr.aria-invalid]="showError(form.controls.category)"
+      [attr.aria-describedby]="showError(form.controls.category) ? 'alert-category-error' : null"
+    >
+      <option value="" disabled>Choose a category…</option>
+      @for (category of categories; track category) {
+        <option [value]="category">{{ categoryLabels[category] }}</option>
+      }
+    </select>
+    @if (showError(form.controls.category)) {
+      <p id="alert-category-error" class="mt-1 text-sm text-danger">Choose a category.</p>
+    }
+  </div>
+
+  <div>
+    <label for="alert-name" class="text-sm font-medium">Name <span class="font-normal text-muted">(optional)</span></label>
+    <input
+      id="alert-name"
+      type="text"
+      formControlName="name"
+      class="input-field mt-1"
+      placeholder="e.g. Big earthquakes"
+      maxlength="100"
+      [attr.aria-invalid]="showError(form.controls.name)"
+    />
+  </div>
+
+  <div>
+    <label for="alert-keywords" class="text-sm font-medium">Keywords <span class="font-normal text-muted">(optional)</span></label>
+    <input
+      id="alert-keywords"
+      type="text"
+      formControlName="keywords"
+      class="input-field mt-1"
+      placeholder="e.g. earthquake, tsunami"
+      aria-describedby="alert-keywords-hint"
+    />
+    <p id="alert-keywords-hint" class="mt-1 text-xs text-muted">
+      Comma-separated. Matches if any keyword appears in the title, summary or tags. Leave empty to match every event
+      in the category.
+    </p>
+  </div>
+
+  <div>
+    <label for="alert-severity" class="text-sm font-medium">Minimum severity</label>
+    <div class="mt-1 flex items-center gap-3">
+      <input
+        id="alert-severity"
+        type="range"
+        min="1"
+        max="5"
+        step="1"
+        formControlName="minSeverity"
+        class="w-full accent-accent"
+        aria-describedby="alert-severity-value"
+      />
+      <output id="alert-severity-value" for="alert-severity" class="w-20 shrink-0 text-sm tabular-nums">
+        {{ form.controls.minSeverity.value }} or higher
+      </output>
+    </div>
+    <p class="mt-1 text-xs text-muted">1 is minor, 5 is critical.</p>
+  </div>
+
+  @if (isMarkets) {
+    <fieldset class="rounded-md border border-line p-3">
+      <legend class="px-1 text-sm font-medium">Market filter <span class="font-normal text-muted">(optional)</span></legend>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label for="alert-symbol" class="text-sm">Symbol</label>
+          <input
+            id="alert-symbol"
+            type="text"
+            formControlName="symbol"
+            class="input-field mt-1 uppercase"
+            placeholder="e.g. ACME"
+            autocomplete="off"
+          />
+        </div>
+        <div>
+          <label for="alert-min-move" class="text-sm">Minimum move (%)</label>
+          <input
+            id="alert-min-move"
+            type="number"
+            min="0"
+            step="0.1"
+            formControlName="minPercentMove"
+            class="input-field mt-1"
+            placeholder="e.g. 3"
+            [attr.aria-invalid]="showError(form.controls.minPercentMove)"
+            [attr.aria-describedby]="showError(form.controls.minPercentMove) ? 'alert-min-move-error' : null"
+          />
+          @if (showError(form.controls.minPercentMove)) {
+            <p id="alert-min-move-error" class="mt-1 text-sm text-danger">Enter 0 or more.</p>
+          }
+        </div>
+      </div>
+      <p class="mt-2 text-xs text-muted">Up or down: a -4% drop matches a 3% minimum.</p>
+    </fieldset>
+  }
+
+  <fieldset
+    [attr.aria-invalid]="showError(form.controls.channelIds)"
+    [attr.aria-describedby]="showError(form.controls.channelIds) ? 'alert-channels-error' : null"
+  >
+    <legend class="text-sm font-medium">Send to <span class="text-danger">*</span></legend>
+    @if (channelOptions().length === 0) {
+      <p class="mt-1 text-sm text-muted">No channels are available right now.</p>
+    } @else {
+      <ul class="mt-1 flex flex-col gap-1">
+        @for (option of channelOptions(); track option.id; let i = $index) {
+          <li class="rounded-md px-2 py-1.5 hover:bg-canvas">
+            <label class="flex cursor-pointer items-center gap-3 text-sm" [class.text-muted]="!option.available">
+              <input
+                type="checkbox"
+                [id]="'alert-channel-' + i"
+                class="size-4 accent-accent"
+                [checked]="isChecked(option.id)"
+                [attr.aria-describedby]="'alert-channel-hint-' + i"
+                (change)="toggleChannel(option.id, $event)"
+              />
+              {{ option.label }}
+            </label>
+            <p [id]="'alert-channel-hint-' + i" class="pl-7 text-xs text-muted">{{ option.hint }}</p>
+          </li>
+        }
+      </ul>
+    }
+    @if (showError(form.controls.channelIds)) {
+      <p id="alert-channels-error" class="mt-1 text-sm text-danger">Select at least one channel.</p>
+    }
+  </fieldset>
+
+  <label class="flex items-center gap-3 text-sm">
+    <input type="checkbox" role="switch" formControlName="enabled" class="switch" />
+    Active
+  </label>
+
+  <div class="flex justify-end gap-2 border-t border-line pt-4">
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create alert' }}
+    </button>
+  </div>
+</form>
