@@ -213,4 +213,35 @@ describe('AlertDispatcher', () => {
       expect(webhook.sent).toHaveLength(1);
     });
   });
+
+  it('records a failed notification when validateDestination throws, and still delivers the others', async () => {
+    const broken = new StubChannel('broken');
+    broken.validateDestination = () => {
+      throw new Error('validator exploded');
+    };
+    const rule = makeRule({ channelIds: ['broken', 'stub'] });
+    const user = makeUser({ contacts: { broken: 'x', stub: 'dest-1' } });
+    const { dispatcher } = setup([rule], [user], [broken, ok]);
+
+    const result = await dispatcher.dispatch(makeEvent());
+
+    expect(result.find((n) => n.channelId === 'broken')).toMatchObject({
+      status: 'failed',
+      reason: 'validator exploded',
+    });
+    expect(result.find((n) => n.channelId === 'stub')?.status).toBe('sent');
+  });
+
+  it('still returns every notification when the onNotification hook throws', async () => {
+    const rule = makeRule({ channelIds: ['stub', 'other'] });
+    const user = makeUser({ contacts: { stub: 'dest-1', other: 'dest-2' } });
+    const { dispatcher, onNotification } = setup([rule], [user], [ok, new StubChannel('other')]);
+    onNotification.mockRejectedValueOnce(new Error('bus down') as never);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await dispatcher.dispatch(makeEvent());
+
+    expect(result).toHaveLength(2);
+    expect(result.every((n) => n.status === 'sent')).toBe(true);
+  });
 });

@@ -69,10 +69,20 @@ export class AlertDispatcher {
       channelName: this.deps.registry.get(channelId)?.displayName ?? channelId,
       createdAt: this.now().toISOString(),
     };
-    const outcome = await this.attempt(event, rule, user, channelId);
+    const outcome = await this.attempt(event, rule, user, channelId).catch(
+      (error: unknown): Pick<Notification, 'status' | 'reason'> => ({
+        status: 'failed',
+        reason: error instanceof Error ? error.message : String(error),
+      }),
+    );
     const notification: Notification = { ...base, ...outcome };
-    await this.deps.notifications.add(notification);
-    await this.deps.onNotification?.(notification);
+    // Recording or announcing one delivery must not sink the others in the same dispatch.
+    try {
+      await this.deps.notifications.add(notification);
+      await this.deps.onNotification?.(notification);
+    } catch (error) {
+      console.error('[dispatcher] could not record or publish notification', notification.id, error);
+    }
     return notification;
   }
 
