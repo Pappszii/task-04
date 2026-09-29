@@ -4,9 +4,11 @@ import {
   InMemoryNotificationRepository,
   InMemoryUserRepository,
 } from './adapters/in-memory-repositories.js';
+import { createMockEventSources } from './adapters/mock-event-sources.js';
 import { seedRules, seedUsers } from './adapters/seed.js';
 import { registerChannels } from './channels.js';
 import type { Notification, WorldEvent } from './domain/index.js';
+import type { EventSource } from './ports/index.js';
 import { AlertDispatcher } from './services/alert-dispatcher.js';
 import { ChannelRegistry } from './services/channel-registry.js';
 import { EventBus } from './services/event-bus.js';
@@ -22,9 +24,15 @@ export interface Container {
   /** Every stored notification is published here (the SSE layer subscribes in a later step). */
   notificationBus: EventBus<Notification>;
   dispatcher: AlertDispatcher;
+  /** Wired to `worldEvents` but not started; the entry point calls `start()` on each. */
+  eventSources: EventSource[];
 }
 
-export function createContainer(): Container {
+export interface ContainerOptions {
+  eventSources?: EventSource[];
+}
+
+export function createContainer(options: ContainerOptions = {}): Container {
   const users = new InMemoryUserRepository(seedUsers());
   const rules = new InMemoryAlertRuleRepository(seedRules());
   const notifications = new InMemoryNotificationRepository();
@@ -49,6 +57,12 @@ export function createContainer(): Container {
     await dispatcher.dispatch(event);
   });
 
+  const eventSources = options.eventSources ?? createMockEventSources();
+  for (const source of eventSources) {
+    // `publish` never rejects: handler errors go to `logError`.
+    source.onEvent((event) => void worldEvents.publish(event));
+  }
+
   return {
     users,
     rules,
@@ -58,5 +72,6 @@ export function createContainer(): Container {
     worldEvents,
     notificationBus,
     dispatcher,
+    eventSources,
   };
 }

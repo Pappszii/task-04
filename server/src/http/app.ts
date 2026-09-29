@@ -1,7 +1,14 @@
 import express from 'express';
 import type { Container } from '../container.js';
+import { parseWorldEvent } from './dev-events.js';
 
-export function createApp(container: Container): express.Express {
+export interface AppOptions {
+  /** Mounts `POST /api/dev/events`. Defaults to on outside production. */
+  devRoutes?: boolean;
+}
+
+export function createApp(container: Container, options: AppOptions = {}): express.Express {
+  const devRoutes = options.devRoutes ?? process.env['NODE_ENV'] !== 'production';
   const app = express();
   app.use(express.json());
 
@@ -27,6 +34,27 @@ export function createApp(container: Container): express.Express {
           destinationKind: channel.destinationKind,
         })),
     );
+  });
+
+  if (devRoutes) {
+    // Demo trigger: runs a hand-made event through the same path as the mock feeds.
+    app.post('/api/dev/events', async (req, res) => {
+      const parsed = parseWorldEvent(req.body);
+      if (!parsed.ok) {
+        res.status(400).json({ errors: parsed.errors });
+        return;
+      }
+      await container.worldEvents.publish(parsed.event);
+      res.status(201).json({ event: parsed.event });
+    });
+  }
+
+  app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (typeof error === 'object' && error !== null && 'type' in error && error.type === 'entity.parse.failed') {
+      res.status(400).json({ errors: ['body is not valid JSON'] });
+      return;
+    }
+    next(error);
   });
 
   return app;
